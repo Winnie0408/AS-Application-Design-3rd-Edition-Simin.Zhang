@@ -27,18 +27,13 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustPan">
+            android:windowSoftInputMode="adjustPan">  <!-- 使软键盘不会遮挡输入框 -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".AudioSrv"
-            android:enabled="true" />
-
+        <!-- 注册“接收短信”广播接收器 -->
         <receiver
             android:name=".SmsReceiver"
             android:exported="true"
@@ -47,7 +42,7 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
-
+        <!-- 注册“发送短信”广播接收器 -->
         <receiver
             android:name=".SmsSender"
             android:exported="true">
@@ -57,11 +52,9 @@
         </receiver>
 
     </application>
-
+    <!-- 声明短信相关权限 -->
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
 </manifest>

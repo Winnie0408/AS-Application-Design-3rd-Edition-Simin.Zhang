@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         content.setMovementMethod(new ScrollingMovementMethod());
         confirm = findViewById(R.id.confirm);
         instance = this;
+        registerReceiver(new SmsReceiver(), new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
         requestPermission();
         confirm.setOnClickListener(v -> showSms());
         send.setOnClickListener(v -> sendSms(String.valueOf(input.getText())));
