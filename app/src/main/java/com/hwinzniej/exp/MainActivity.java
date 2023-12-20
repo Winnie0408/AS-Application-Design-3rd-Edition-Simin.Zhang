@@ -1,8 +1,6 @@
 package com.hwinzniej.exp;
 
 import android.Manifest;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -30,8 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    NotificationManager n_Manager;
-    Notification notification;
     Button send, confirm;
     EditText input, phone;
     TextView content;
@@ -42,12 +38,10 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Long> date = new ArrayList<>();
     Map<Long, String> smsContent = new HashMap<>();
     public static MainActivity instance;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         send = findViewById(R.id.send);
         input = findViewById(R.id.input);
         phone = findViewById(R.id.phone);
@@ -55,7 +49,11 @@ public class MainActivity extends AppCompatActivity {
         content.setMovementMethod(new ScrollingMovementMethod());
         confirm = findViewById(R.id.confirm);
         instance = this;
-
+        requestPermission();
+        confirm.setOnClickListener(v -> showSms());
+        send.setOnClickListener(v -> sendSms(String.valueOf(input.getText())));
+    }
+    private void requestPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -76,15 +74,7 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.RECEIVE_SMS},
                     MY_PERMISSIONS_REQUEST_RECEIVE_SMS);
         }
-
-        confirm.setOnClickListener(v -> {
-            showSms();
-        });
-
-        send.setOnClickListener(v -> {
-            sendSms(String.valueOf(input.getText()));
-        });
-    }
+    } //请求短信相关权限
 
     private void sendSms(String message) {
         String SENT = "action.send.sms";
@@ -95,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         SmsManager smsManager = SmsManager.getDefault();
         smsManager.sendTextMessage(phoneNumber, null, message, sentPI, null);
         input.setText("");
-    }
+    }  //发送短信
 
     public void showSms() {
         phoneNumber = String.valueOf(phone.getText());
@@ -104,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "没有与" + phoneNumber + "的短信记录", Toast.LENGTH_SHORT).show();
         else {
             for (Long d : date) {
-                content.append(convertTs(d) + "\n" + smsContent.get(d) + "\n----------------------------------------\n\n");
+                content.append(convertTsToTime(d) + "\n" + smsContent.get(d) + "\n----------------------------------------\n\n");
             }
             int scrollAmount = content.getLayout().getLineTop(content.getLineCount()) - content.getHeight();
             // if there is no need to scroll, scrollAmount will be <=0
@@ -113,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
             else
                 content.scrollTo(0, 0);
         }
-    }
+    }  //显示短信
 
     public void readSms() {
         date.clear();
@@ -175,13 +165,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         date.sort(Long::compareTo);
-    }
+    }  //读取短信
 
-    private String convertTs(Long timestamp) {
+    private String convertTsToTime(Long timestamp) {
         Date date = new Date(timestamp);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return formatter.format(date);
-    }
+    }  //时间戳转时间
 
 //    class mClick implements View.OnClickListener {
 //        @Override
