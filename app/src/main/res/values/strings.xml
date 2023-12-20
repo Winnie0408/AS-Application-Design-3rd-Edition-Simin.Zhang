@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Exp</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="hello">
+              几何图形示例
+   </string>
+    <string name="one">荷塘月色--凤凰传奇</string>
+    <string name="two">白狐--陈瑞</string>
+    <string name="three">青花交瓷--周杰伦</string>
+    <string name="btn">获取选项值</string>
+</resources>
