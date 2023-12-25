@@ -11,7 +11,7 @@ public class connSocket implements Callable<String> {
     static DataInputStream datain;
     static DataOutputStream dataout;
     static Socket ss;
-    String IP = "192.168.213.129";
+    String IP = "192.168.91.43";
     String runLog = "";
     public String call() throws Exception {
         try {
