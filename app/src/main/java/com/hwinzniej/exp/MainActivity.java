@@ -1,77 +1,99 @@
 package com.hwinzniej.exp;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
+import android.os.StrictMode;
+import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
-    Button IPBtn;
-    EditText hostName;
-    ExecutorService executorService;
+    ImageView img;
+    Button connBtn;
+    TextView txt;
+    HttpURLConnection conn;
+    InputStream inStream;
+    String str = "http://192.168.213.213:8080/AndroidTest.jpg";
+    MyHandler handler = new MyHandler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        IPBtn = findViewById(R.id.button);
-        hostName = findViewById(R.id.editTextText);
-        IPBtn.setOnClickListener(v -> {
-            try {
-                getLocalIPAddress(hostName.getText().toString());
-            } catch (Exception e1) {
-                e1.printStackTrace();
-            }
-        });
+        img = findViewById(R.id.imageView2);
+        txt = findViewById(R.id.textView2);
+        connBtn = findViewById(R.id.button2);
+        connBtn.setOnClickListener(new mClick());
     }
 
-    public void getLocalIPAddress(String hostName) {
+    class mClick implements View.OnClickListener {
+        String str;
+
+        @Override
+        public void onClick(View v) {
+            StrictMode.setThreadPolicy(
+                    new StrictMode
+                            .ThreadPolicy
+                            .Builder()
+                            .detectDiskReads()
+                            .detectDiskWrites()
+                            .detectNetwork()
+                            .penaltyLog()
+                            .build()
+            );
+            StrictMode.setVmPolicy(
+                    new StrictMode
+                            .VmPolicy
+                            .Builder()
+                            .detectLeakedSqlLiteObjects()
+                            .detectLeakedClosableObjects()
+                            .penaltyLog()
+                            .penaltyDeath()
+                            .build()
+            );
+            getPic();
+        }
+    }
+
+    private void getPic() {
         try {
-            if (hostName.equals("")) {
-                AtomicReference<String> ipv4 = new AtomicReference<>("");
-                ArrayList<NetworkInterface> nilist = Collections.list(NetworkInterface.getNetworkInterfaces());
-                for (NetworkInterface ni : nilist) {
-                    ArrayList<InetAddress> ialist = Collections.list(ni.getInetAddresses());
-                    for (InetAddress address : ialist) {
-                        ipv4.set(address.getHostAddress());
-                        if (!address.isLoopbackAddress() && address instanceof Inet4Address) {
-                            runOnUiThread(() -> {
-                                Toast.makeText(MainActivity.this, "本机IP地址：" + ipv4, Toast.LENGTH_LONG).show();
-                            });
-                        }
-                    }
+            URL url = new URL(str);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setRequestMethod("GET");
+            if (conn.getResponseCode() == 200) {
+                inStream = conn.getInputStream();
+                Bitmap bitmap = BitmapFactory.decodeStream(inStream);
+                handler.obtainMessage(0, bitmap).sendToTarget();
+                int result = inStream.read();
+                while (result != -1) {
+                    txt.append("\n" + (char) result);
+                    result = inStream.read();
                 }
-            } else {
-                executorService = Executors.newSingleThreadExecutor();
-                AtomicReference<String> address = new AtomicReference<>("");
-                executorService.execute(() -> {
-                    try {
-                        address.set(InetAddress.getByName(hostName).getHostAddress());
-                        runOnUiThread(() -> {
-                            Toast.makeText(MainActivity.this, hostName + " 对应的IP地址：" + address.get(), Toast.LENGTH_LONG).show();
-                        });
-                    } catch (UnknownHostException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                inStream.close();
+                txt.append("\n建立输入流成功");
             }
-        } catch (SocketException ex) {
-            Log.e("localip", ex.toString());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    class MyHandler extends Handler {
+        @Override
+        public void handleMessage(android.os.Message msg) {
+            super.handleMessage(msg);
+            txt.append("\n图片下载完成");
+            img.setImageBitmap((Bitmap) msg.obj);
         }
     }
 }
