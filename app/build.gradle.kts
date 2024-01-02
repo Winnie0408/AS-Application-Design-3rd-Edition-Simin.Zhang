@@ -32,7 +32,6 @@ android {
 }
 
 dependencies {
-
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
@@ -42,5 +41,4 @@ dependencies {
     implementation ("io.apisense:rhino-android:1.2.0")
     implementation("com.alibaba.fastjson2:fastjson2:2.0.44.android4")
     implementation("com.android.volley:volley:1.2.1")
-
 }
