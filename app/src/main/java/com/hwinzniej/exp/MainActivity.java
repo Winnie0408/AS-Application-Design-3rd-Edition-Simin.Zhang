@@ -1,6 +1,5 @@
 package com.hwinzniej.exp;
 
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -10,123 +9,116 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.android.volley.NetworkResponse;
-import com.android.volley.ParseError;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.toolbox.HttpHeaderParser;
-import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 public class MainActivity extends AppCompatActivity {
-    TextView txt, txt2;
-    ListView musicView;   //定义列表组件，用于显示音乐信息
-    ArrayAdapter<String> adapter;   //定义适配器
-    Button readBtn, stopBtn;
-    String[] list = new String[5];
-    Map<Integer, MusicInfo> musicMap = new HashMap<>();
-    String musicUrl = "http://192.168.41.128/";
-    MediaPlayer mMediaPlayer;
+    TextView txt;
+    Button volleyBtn;
+    ListView listData;
+    DataInfo dataInfo = new DataInfo();
+    Map<Integer, DataInfo> dataMap = new HashMap<>();
+    Semaphore done = new Semaphore(0);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txt = findViewById(R.id.textView3);
-        txt2 = findViewById(R.id.textView4);
-        musicView = findViewById(R.id.listView);
-        readBtn = findViewById(R.id.button);
-        stopBtn = findViewById(R.id.button3);
-        getServerData();
-        readBtn.setOnClickListener(v -> {
-            for (int i = 0; i < musicMap.size(); i++) {
-                list[i] = musicMap.get(i).getName() + " - " + musicMap.get(i).getSinger();
-            }
-            adapter = new ArrayAdapter<>(
-                    MainActivity.this,
-                    android.R.layout.simple_list_item_1,
-                    list);
-            musicView.setAdapter(adapter);
-        });
-        stopBtn.setOnClickListener(v -> {
-            if (mMediaPlayer != null)
-                if (mMediaPlayer.isPlaying()) {
-                    mMediaPlayer.stop();
-                    mMediaPlayer.reset();
-                    mMediaPlayer.release();
-                    txt2.setText("");
-                    txt.setText("音乐播放信息");
-                }
-        });
-        musicView.setOnItemClickListener((parent, view, position, id) -> {
-            if (mMediaPlayer != null) {
-                if (mMediaPlayer.isPlaying()) {
-                    mMediaPlayer.stop();
-                    mMediaPlayer.reset();
-                    mMediaPlayer.release();
-                    txt2.setText("");
-                    txt.setText("音乐播放信息");
-                }
-            } //如果正在播放音乐，先停止播放
-            MusicInfo clickedMusicInfo = musicMap.get(position);
-            String mp3 = clickedMusicInfo.getMp3();
+        volleyBtn = findViewById(R.id.button);
+        txt = findViewById(R.id.textView);
+        listData = findViewById(R.id.listView);
+        volleyBtn.setOnClickListener(v -> {
+            getServerData();
             try {
-                String path = musicUrl + mp3;
-                txt.setText(path);
-                mMediaPlayer = new MediaPlayer();
-                mMediaPlayer.reset();
-                mMediaPlayer.setDataSource(path);
-                mMediaPlayer.prepare();
-                mMediaPlayer.start();
-                txt2.setText("总时长：" + new SimpleDateFormat("mm:ss.SSS").format(mMediaPlayer.getDuration()));
-            } catch (IOException ignored) {}
+                done.acquire();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            ArrayList<String> list = new ArrayList<>();
+            for (int i = 0; i < dataMap.size(); i++) {
+                dataInfo = dataMap.get(i);
+                list.add("序号：" + dataInfo.getSid());
+                list.add("姓名：" + dataInfo.getName());
+                list.add("邮箱：" + dataInfo.getEmail());
+                list.add("");
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this,
+                    android.R.layout.simple_list_item_1, list.toArray(new String[0]));
+            listData.setAdapter(adapter);
         });
     }
     public void getServerData() {
-        String jsonUrl = musicUrl + "music_info.json";
-        RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(jsonUrl, response -> {
-                    try {
-                        for (int i = 0; i < response.length(); i++) {
-                            MusicInfo musicinfo = new MusicInfo();
-                            String sname = response.getJSONObject(i).getString("name");
-                            String ssinger = response.getJSONObject(i).getString("singer");
-                            String smp3 = response.getJSONObject(i).getString("mp3");
-                            musicinfo.setName(sname);
-                            musicinfo.setSinger(ssinger);
-                            musicinfo.setMp3(smp3);
-                            musicMap.put(i, musicinfo);
+        String jsonURL = "http://192.168.41.128/conn_testdb.php";
+        try {
+            RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
+            StringRequest stringRequest = new StringRequest(jsonURL, response -> {
+                        if (response != null) {
+                            try {
+                                JSONArray jsonArray = new JSONArray(response);
+                                for (int i = 0; i < jsonArray.length(); i++) {
+                                    DataInfo dataInfo = new DataInfo();
+                                    JSONObject jsonData = jsonArray.getJSONObject(i);
+                                    String sid = (String) jsonData.get("sid");
+                                    String sname = (String) jsonData.get("name");
+                                    String semail = (String) jsonData.get("email");
+                                    dataInfo.setSid(sid);
+                                    dataInfo.setName(sname);
+                                    dataInfo.setEmail(semail);
+                                    dataMap.put(i, dataInfo);
+                                }
+                            } catch (JSONException e) {
+                                txt.setText("list错误");
+                                Log.e("json错误", e.getMessage(), e);
+                            }
                         }
-                    } catch (JSONException e) {
-                        txt.setText("list错误");
-                        Log.e("json错误", e.getMessage(), e);
-                    }
-                },
-                error -> Log.e("TAG错误", "")) {
-            @Override
-            protected Response<JSONArray> parseNetworkResponse(
-                    NetworkResponse response) {
-                try {
-                    String jsonString = new String(response.data,
-                            StandardCharsets.UTF_8);
-                    return Response.success(new JSONArray(jsonString),
-                            HttpHeaderParser.parseCacheHeaders(response));
-                } catch (JSONException e) {
-                    return Response.error(new ParseError(e));
-                }
-            }
-        };
-        mQueue.add(jsonArrayRequest);
+                    },
+                    error -> Log.e("TAG错误", error.getMessage(), error));
+            mQueue.add(stringRequest);
+            done.release();
+        } catch (Exception ignored) {
+        }
+    }
+
+    public static class DataInfo {
+        private String name;
+        private String sid;
+        private String email;
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public void setSid(String sid) {
+            this.sid = sid;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getSid() {
+            return sid;
+        }
+
+        public String getEmail() {
+            return email;
+        }
     }
 
 }
