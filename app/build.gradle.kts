@@ -41,5 +41,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation ("io.apisense:rhino-android:1.2.0")
     implementation("com.alibaba.fastjson2:fastjson2:2.0.44.android4")
+    implementation("com.android.volley:volley:1.2.1")
 
 }
